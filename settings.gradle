@@ -1,0 +1,2 @@
+rootProject.name='IU Bionics'
+include ':app'
