@@ -1,5 +1,6 @@
 package com.hcmiu.bme.iubionics;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -75,6 +76,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     private boolean mIsBluetoothConnected = false;
     private static final String TAG = "iuBionics-PlotingActivity";
     private ProgressDialog progressDialog;
+    @SuppressLint("LongLogTag")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,7 +98,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         seekBarY = findViewById(R.id.seekBar2);
         seekBarY.setMax(180);
         seekBarY.setOnSeekBarChangeListener(this);
-        LineChart chart = (LineChart) findViewById(R.id.chart1);
+
         {   // // Chart Style // //
             chart = findViewById(R.id.chart1);
 
@@ -248,12 +250,12 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-//        tvX.setText(String.valueOf(seekBarX.getProgress()));
-//        tvY.setText(String.valueOf(seekBarY.getProgress()));
-//
+        tvX.setText(String.valueOf(seekBarX.getProgress()));
+        tvY.setText(String.valueOf(seekBarY.getProgress()));
+
         setData(seekBarX.getProgress(), seekBarY.getProgress());
-//
-//        // redraw
+
+        // redraw
         chart.invalidate();
     }
 
