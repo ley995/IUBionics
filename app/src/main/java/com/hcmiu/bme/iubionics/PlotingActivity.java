@@ -57,6 +57,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -103,7 +104,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             chart = findViewById(R.id.chart1);
 
             // background color
-            chart.setBackgroundColor(Color.WHITE);
+           // chart.setBackgroundColor(Color.WHITE);
 
             // disable description text
             chart.getDescription().setEnabled(false);
@@ -166,7 +167,6 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
         // draw legend entries as lines
         l.setForm(LegendForm.LINE);
-
 
     }
 
@@ -399,7 +399,21 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                         handler.post(new Runnable() {
                             public void run() {
 //                                EditText editText=findViewById(R.id.textBluetoothReceived);
-//                                editText.append(strInput);
+//                                editText.append(strInput)
+                                int startidx = 1;
+                                int endidx = 5; //SxxxxE containa 6 characters, idexes from 0 - 5
+                                if (strInput.contains("S") && strInput.contains("E")) {
+                                    Log.d("Data", "Valid");
+                                    String data = strInput.substring(startidx, endidx);
+                                    Log.d("Data", data);
+                                    Log.d("Start", "Splitting");
+                                    int value = Integer.parseInt(data);
+                                    Log.d("Value =", String.valueOf(value));
+                                }
+                                 else
+                                    {
+                                        Log.d("Data","INvalid");
+                                    }
                                 //TODO Thiên ơi mày code đoạn này cho nó upload data của mày lên nè
                             }
                         });
