@@ -83,7 +83,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 BluetoothDevice device = ((MyAdapter) (listView.getAdapter())).getSelectedItem();
-                Intent intent = new Intent(getApplicationContext(), Controlling.class);
+//                Intent intent = new Intent(getApplicationContext(), Controlling.class);
+                Intent intent = new Intent(getApplicationContext(), PlotingActivity.class);
                 intent.putExtra(DEVICE_EXTRA, device);
                 intent.putExtra(DEVICE_UUID, mDeviceUUID.toString());
                 intent.putExtra(BUFFER_SIZE, mBufferSize);

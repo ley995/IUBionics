@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.hcmiu.bme.iubionics">
+
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/iubionics"
@@ -10,7 +12,8 @@
         android:roundIcon="@drawable/iubionics"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Controlling"></activity>
+        <activity android:name=".PlotingActivity"></activity>
+        <activity android:name=".Controlling" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
