@@ -23,6 +23,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -48,6 +50,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IFillFormatter;
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.dataprovider.LineDataProvider;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
@@ -77,6 +80,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     private boolean mIsBluetoothConnected = false;
     private static final String TAG = "iuBionics-PlotingActivity";
     private ProgressDialog progressDialog;
+
+    public int count = 1;
+
     @SuppressLint("LongLogTag")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,7 +163,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         // add data
         seekBarX.setProgress(45);
         seekBarY.setProgress(180);
-        setData(45, 180);
+        setData(0, 0);
 
         // draw points over time
         chart.animateX(1500);
@@ -168,31 +174,49 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         // draw legend entries as lines
         l.setForm(LegendForm.LINE);
 
+/*        Handler handler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+
+            }
+        }*/
     }
 
-    private void setData(int count, float range) {
+    private void setData(int x, int y) {
 
         ArrayList<Entry> values = new ArrayList<>();
 
-        for (int i = 0; i < count; i++) {
+/*        for (int i = 0; i < count; i++) {
 
             float val = (float) (Math.random() * range) - 30;
             values.add(new Entry(i, val, getResources().getDrawable(R.drawable.star)));
-        }
-
+        }*/
+        Log.d("Set data","start");
+        values.add(new Entry(x, y,getResources().getDrawable(R.drawable.star)));
         LineDataSet set1;
-
-        if (chart.getData() != null &&
-                chart.getData().getDataSetCount() > 0) {
-            set1 = (LineDataSet) chart.getData().getDataSetByIndex(0);
-            set1.setValues(values);
-            set1.notifyDataSetChanged();
-            chart.getData().notifyDataChanged();
+        LineData chartdata = chart.getData();
+        if (chartdata != null && chartdata.getDataSetCount() > 0)
+        {
+            set1 = (LineDataSet) chartdata.getDataSetByIndex(0);
+            chartdata.addEntry(new Entry(x,y),0);
+            //set1.setEntries(values);
+            /*XAxis xl = chart.getXAxis();
+            xl.setDrawGridLines(true);
+            xl.setGranularityEnabled(true);
+            xl.setGranularity(2f);*/
+//            xl.setValueFormatter(new IndexAxisValueFormatter(timeStamp));
+            chartdata.notifyDataChanged();
+           // set1.notifyDataSetChanged();
             chart.notifyDataSetChanged();
-        } else {
+            //chart.setVisibleXRangeMaximum(500);
+            chart.moveViewToX(chartdata.getEntryCount());
+            chart.invalidate();
+            Log.d("Setdata","Finish");
+        }
+        else {
             // create a dataset and give it a type
-            set1 = new LineDataSet(values, "DataSet 1");
-
+            //set1 = new LineDataSet(values, "DataSet 1");
+            set1 = new LineDataSet(values,"Channel1");
             set1.setDrawIcons(false);
 
             // draw dashed line
@@ -226,14 +250,12 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                 @Override
                 public float getFillLinePosition(ILineDataSet dataSet, LineDataProvider dataProvider) {
                     return chart.getAxisLeft().getAxisMinimum();
-                }
-            });
-
+                    }
+                });
+            }
             // set color of filled area
-           
-            set1.setFillColor(Color.BLACK);
-            
 
+            set1.setFillColor(Color.BLACK);
             ArrayList<ILineDataSet> dataSets = new ArrayList<>();
             dataSets.add(set1); // add the data sets
 
@@ -242,8 +264,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
             // set data
             chart.setData(data);
+            Log.d("update chart","finish");
         }
-    }
+
     protected float getRandom(float range, float start) {
         return (float) (Math.random() * range) + start;
     }
@@ -253,10 +276,10 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         tvX.setText(String.valueOf(seekBarX.getProgress()));
         tvY.setText(String.valueOf(seekBarY.getProgress()));
 
-        setData(seekBarX.getProgress(), seekBarY.getProgress());
+//        setData(seekBarX.getProgress(), seekBarY.getProgress());
 
         // redraw
-        chart.invalidate();
+        //chart.invalidate();
     }
 
     @Override
@@ -400,6 +423,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                             public void run() {
 //                                EditText editText=findViewById(R.id.textBluetoothReceived);
 //                                editText.append(strInput)
+
                                 int startidx = 1;
                                 int endidx = 5; //SxxxxE containa 6 characters, idexes from 0 - 5
                                 if (strInput.contains("S") && strInput.contains("E")) {
@@ -409,6 +433,11 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                                     Log.d("Start", "Splitting");
                                     int value = Integer.parseInt(data);
                                     Log.d("Value =", String.valueOf(value));
+                                    tvX.setText(String.valueOf(value));
+                                    setData(count,value);
+                                    count++;
+                                    Log.d("X = ",String.valueOf(count));
+
                                 }
                                  else
                                     {
@@ -421,7 +450,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                          * If checked then receive text, better design would probably be to stop thread if unchecked and free resources, but this is a quick fix
                          */
                     }
-                    Thread.sleep(500);
+                    Thread.sleep(1);
                 }
             } catch (IOException e) {
 // TODO Auto-generated catch block
@@ -517,10 +546,21 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                 msg("Connected to device");
                 mIsBluetoothConnected = true;
                 mReadThread = new PlotingActivity.ReadInput(); // Kick off input reader
+             //   mReadThread.run();
             }
 
             progressDialog.dismiss();
         }
 
+    }
+
+    private LineDataSet createSet0() {
+        LineDataSet set0 = new LineDataSet(null, " Chanel 1");
+        set0.setDrawCircles(false);
+        set0.setDrawValues(false);
+        set0.setAxisDependency(YAxis.AxisDependency.LEFT);
+        set0.setColor(Color.GREEN);
+        set0.setLineWidth(2f);
+        return set0;
     }
 }
