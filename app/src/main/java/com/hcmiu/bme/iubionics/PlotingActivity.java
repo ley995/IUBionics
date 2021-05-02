@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -62,13 +63,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 
 public class PlotingActivity extends AppCompatActivity implements OnSeekBarChangeListener, OnChartValueSelectedListener {
     private static final int PERMISSION_STORAGE = 0;
     private LineChart chart;
-    private SeekBar seekBarX, seekBarY;
+   // private SeekBar seekBarX, seekBarY;
     private TextView tvX, tvY;
     private BluetoothSocket mBTSocket;
     private int mMaxChars = 50000;
@@ -81,7 +84,13 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     private static final String TAG = "iuBionics-PlotingActivity";
     private ProgressDialog progressDialog;
 
-    public int count = 1;
+//    public int count = 1;
+    private float starttime = 0;
+    private float timestamp = 0;
+
+    private ArrayList<Integer> dataValues = new ArrayList<>();
+    private ArrayList<Double> timeStamp = new ArrayList<>();
+    private ArrayList<Entry> values = new ArrayList<>();
 
     @SuppressLint("LongLogTag")
     @Override
@@ -96,28 +105,18 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         mDeviceUUID = UUID.fromString(b.getString(MainActivity.DEVICE_UUID));
         mMaxChars = b.getInt(MainActivity.BUFFER_SIZE);
         Log.d(TAG, "Ready");
-        setTitle("Ploting");
+        setTitle("Plotting");
         tvX = findViewById(R.id.tvXMax);
         tvY = findViewById(R.id.tvYMax);
-        seekBarX = findViewById(R.id.seekBar1);
-        seekBarX.setOnSeekBarChangeListener(this);
-
-        seekBarY = findViewById(R.id.seekBar2);
-        seekBarY.setMax(180);
-        seekBarY.setOnSeekBarChangeListener(this);
 
         {   // // Chart Style // //
             chart = findViewById(R.id.chart1);
-
             // background color
-           // chart.setBackgroundColor(Color.WHITE);
-
+           chart.setBackgroundColor(Color.WHITE);
             // disable description text
             chart.getDescription().setEnabled(false);
-
             // enable touch gestures
             chart.setTouchEnabled(true);
-
             // set listeners
             chart.setOnChartValueSelectedListener(this);
             chart.setDrawGridBackground(false);
@@ -137,6 +136,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
             // force pinch zoom along both axis
             chart.setPinchZoom(true);
+
         }
         XAxis xAxis;
         {   // // X-Axis Style // //
@@ -144,6 +144,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
             // vertical grid lines
             xAxis.enableGridDashedLine(10f, 10f, 0f);
+            xAxis.setAxisMaximum(0);
+            xAxis.setPosition(XAxis.XAxisPosition.TOP);
+//            xAxis.setL
         }
 
         YAxis yAxis;
@@ -157,12 +160,10 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             yAxis.enableGridDashedLine(10f, 10f, 0f);
 
             // axis range
-            yAxis.setAxisMaximum(200f);
-            yAxis.setAxisMinimum(-50f);
+            yAxis.setAxisMaximum(9900f);
+            yAxis.setAxisMinimum(0f);
         }
         // add data
-        seekBarX.setProgress(45);
-        seekBarY.setProgress(180);
         setData(0, 0);
 
         // draw points over time
@@ -173,18 +174,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
         // draw legend entries as lines
         l.setForm(LegendForm.LINE);
-
-/*        Handler handler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-
-            }
-        }*/
     }
 
-    private void setData(int x, int y) {
-
-        ArrayList<Entry> values = new ArrayList<>();
+    private void setData(float x, float y) {
 
 /*        for (int i = 0; i < count; i++) {
 
@@ -192,23 +184,25 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             values.add(new Entry(i, val, getResources().getDrawable(R.drawable.star)));
         }*/
         Log.d("Set data","start");
-        values.add(new Entry(x, y,getResources().getDrawable(R.drawable.star)));
+        values.add(new Entry(x, y));
         LineDataSet set1;
         LineData chartdata = chart.getData();
         if (chartdata != null && chartdata.getDataSetCount() > 0)
         {
             set1 = (LineDataSet) chartdata.getDataSetByIndex(0);
-            chartdata.addEntry(new Entry(x,y),0);
-            //set1.setEntries(values);
+//            chartdata.addEntry(new Entry(x,y),0);
+            set1.setEntries(values);
             /*XAxis xl = chart.getXAxis();
             xl.setDrawGridLines(true);
             xl.setGranularityEnabled(true);
             xl.setGranularity(2f);*/
+            XAxis xAxis = chart.getXAxis();
+            xAxis.resetAxisMaximum();
 //            xl.setValueFormatter(new IndexAxisValueFormatter(timeStamp));
             chartdata.notifyDataChanged();
-           // set1.notifyDataSetChanged();
+            set1.notifyDataSetChanged();
             chart.notifyDataSetChanged();
-            //chart.setVisibleXRangeMaximum(500);
+            chart.setVisibleXRangeMaximum(10);
             chart.moveViewToX(chartdata.getEntryCount());
             chart.invalidate();
             Log.d("Setdata","Finish");
@@ -221,17 +215,18 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
             // draw dashed line
             set1.enableDashedLine(10f, 5f, 0f);
-
+            set1.setDrawCircles(false);
+            set1.setDrawValues(false);
             // black lines and points
             set1.setColor(Color.BLACK);
-            set1.setCircleColor(Color.BLACK);
+            //set1.setCircleColor(Color.BLACK);
 
             // line thickness and point size
             set1.setLineWidth(1f);
-            set1.setCircleRadius(3f);
+            //set1.setCircleRadius(3f);
 
             // draw points as solid circles
-            set1.setDrawCircleHole(false);
+            //set1.setDrawCircleHole(false);
 
             // customize legend entry
             set1.setFormLineWidth(1f);
@@ -239,7 +234,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             set1.setFormSize(15.f);
 
             // text size of values
-            set1.setValueTextSize(9f);
+            //set1.setValueTextSize(0f);
 
             // draw selection line as dashed
             set1.enableDashedHighlightLine(10f, 5f, 0f);
@@ -273,8 +268,8 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-        tvX.setText(String.valueOf(seekBarX.getProgress()));
-        tvY.setText(String.valueOf(seekBarY.getProgress()));
+        //tvX.setText(String.valueOf(seekBarX.getProgress()));
+        //tvY.setText(String.valueOf(seekBarY.getProgress()));
 
 //        setData(seekBarX.getProgress(), seekBarY.getProgress());
 
@@ -423,7 +418,6 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                             public void run() {
 //                                EditText editText=findViewById(R.id.textBluetoothReceived);
 //                                editText.append(strInput)
-
                                 int startidx = 1;
                                 int endidx = 5; //SxxxxE containa 6 characters, idexes from 0 - 5
                                 if (strInput.contains("S") && strInput.contains("E")) {
@@ -431,13 +425,27 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                                     String data = strInput.substring(startidx, endidx);
                                     Log.d("Data", data);
                                     Log.d("Start", "Splitting");
+//                                    Float value = Float.parseFloat(data);
                                     int value = Integer.parseInt(data);
                                     Log.d("Value =", String.valueOf(value));
-                                    tvX.setText(String.valueOf(value));
-                                    setData(count,value);
-                                    count++;
-                                    Log.d("X = ",String.valueOf(count));
-
+                                    tvY.setText(String.valueOf(value));
+                                    if(starttime == 0)
+                                    {
+                                        starttime = SystemClock.elapsedRealtime();
+                                        timestamp = 0;
+                                        Log.d("starttime= ",String.valueOf(starttime));
+                                    }
+                                    else
+                                    {
+                                        timestamp = (SystemClock.elapsedRealtime() - starttime)/1000;
+                                        Log.d("timestart= ",String.valueOf(starttime));
+                                        Log.d("timestamp= ",String.valueOf(timestamp));
+                                    }
+                                    tvX.setText(String.valueOf(timestamp));
+                                    setData(timestamp,value);
+                                    //count++;
+                                    Log.d("Y = ",String.valueOf(value));
+                                    Log.d("X = ",String.valueOf(timestamp));
                                 }
                                  else
                                     {
@@ -551,16 +559,6 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
             progressDialog.dismiss();
         }
-
     }
 
-    private LineDataSet createSet0() {
-        LineDataSet set0 = new LineDataSet(null, " Chanel 1");
-        set0.setDrawCircles(false);
-        set0.setDrawValues(false);
-        set0.setAxisDependency(YAxis.AxisDependency.LEFT);
-        set0.setColor(Color.GREEN);
-        set0.setLineWidth(2f);
-        return set0;
-    }
 }
