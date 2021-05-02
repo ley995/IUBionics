@@ -198,7 +198,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             xl.setGranularity(2f);*/
             XAxis xAxis = chart.getXAxis();
             xAxis.resetAxisMaximum();
-//            xl.setValueFormatter(new IndexAxisValueFormatter(timeStamp));
+//            xAxis.setValueFormatter(new IndexAxisValueFormatter(timeStamp));
             chartdata.notifyDataChanged();
             set1.notifyDataSetChanged();
             chart.notifyDataSetChanged();
@@ -210,37 +210,38 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         else {
             // create a dataset and give it a type
             //set1 = new LineDataSet(values, "DataSet 1");
-            set1 = new LineDataSet(values,"Channel1");
+            set1 = new LineDataSet(values,"Channel 1");
             set1.setDrawIcons(false);
 
             // draw dashed line
-            set1.enableDashedLine(10f, 5f, 0f);
+            //set1.enableDashedLine(10f, 5f, 0f);
             set1.setDrawCircles(false);
             set1.setDrawValues(false);
             // black lines and points
-            set1.setColor(Color.BLACK);
+            set1.setColor(Color.RED);
+
             //set1.setCircleColor(Color.BLACK);
 
             // line thickness and point size
-            set1.setLineWidth(1f);
+            set1.setLineWidth(3f);
             //set1.setCircleRadius(3f);
 
             // draw points as solid circles
             //set1.setDrawCircleHole(false);
 
             // customize legend entry
-            set1.setFormLineWidth(1f);
+            set1.setFormLineWidth(2f);
             set1.setFormLineDashEffect(new DashPathEffect(new float[]{10f, 5f}, 0f));
-            set1.setFormSize(15.f);
+            set1.setFormSize(15f);
 
             // text size of values
             //set1.setValueTextSize(0f);
 
             // draw selection line as dashed
             set1.enableDashedHighlightLine(10f, 5f, 0f);
-
+            set1.setHighlightLineWidth(3f);
             // set the filled area
-            set1.setDrawFilled(true);
+            set1.setDrawFilled(false);
             set1.setFillFormatter(new IFillFormatter() {
                 @Override
                 public float getFillLinePosition(ILineDataSet dataSet, LineDataProvider dataProvider) {
@@ -259,6 +260,8 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
             // set data
             chart.setData(data);
+            Legend legend = chart.getLegend();
+            legend.setTextSize(12f);
             Log.d("update chart","finish");
         }
 

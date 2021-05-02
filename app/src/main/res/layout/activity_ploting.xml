@@ -10,11 +10,12 @@
         android:id="@+id/chart1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentStart="true"
         android:layout_above="@+id/tvXMax"
-        />
-<!--        android:layout_above="@+id/tvXMax"-->
-<!--    android:layout_marginBottom="100dp"-->
+        android:layout_below="@+id/xLabel"
+        android:layout_marginStart="-20dp"
+        android:layout_marginTop="5dp"
+        android:layout_toEndOf="@+id/yLabel" />
+
 
     <TextView
         android:id="@+id/tvXMax"
@@ -30,6 +31,7 @@
         android:text="@string/dash"
         android:textAppearance="?android:attr/textAppearanceMedium"
         />
+
     <TextView
         android:id="@+id/tvYMax"
         android:layout_width="100dp"
@@ -41,6 +43,30 @@
         android:layout_marginRight="16dp"
         android:gravity="right"
         android:text="@string/dash"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        />
+
+    <TextView
+        android:id="@+id/xLabel"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:text="Time (s)"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        />
+
+    <TextView
+        android:id="@+id/yLabel"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:rotation="-90"
+        android:text="R (ohm)"
+        android:gravity="center_vertical"
         android:textAppearance="?android:attr/textAppearanceMedium"
         />
 
