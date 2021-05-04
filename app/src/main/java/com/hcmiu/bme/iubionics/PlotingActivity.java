@@ -55,6 +55,7 @@ import com.github.mikephil.charting.formatter.IFillFormatter;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.dataprovider.LineDataProvider;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.Utils;
@@ -68,6 +69,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.List;
 
 
 public class PlotingActivity extends AppCompatActivity implements OnSeekBarChangeListener, OnChartValueSelectedListener {
@@ -86,6 +88,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     private PlotingActivity.ReadInput mReadThread = null;
     private UUID mDeviceUUID;
     private Button mBtnDisconnect;
+    private Button  btnZoomOut;
     private boolean mIsUserInitiatedDisconnect = false;
     private boolean mIsBluetoothConnected = false;
     private static final String TAG = "Plotting";
@@ -100,6 +103,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     private ArrayList<Integer> dataValues = new ArrayList<>();
     private ArrayList<Double> timeStamp = new ArrayList<>();
     private ArrayList<Entry> values = new ArrayList<>();
+
 
     @SuppressLint("LongLogTag")
     @Override
@@ -117,6 +121,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         setTitle("Plotting");
         tvX = findViewById(R.id.tvXMax);
         tvY = findViewById(R.id.tvYMax);
+        btnZoomOut = findViewById(R.id.btn_zoomout);
 
         {   // // Chart Style // //
             chart = findViewById(R.id.chart1);
@@ -184,6 +189,16 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 
         // draw legend entries as lines
         l.setForm(LegendForm.LINE);
+
+        btnZoomOut.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                List <Entry> allList;
+                allList = values;
+                setData(allList);
+            }
+        });
+
 
         handler = new Handler(Looper.getMainLooper())
         {
@@ -317,7 +332,19 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                                 recDataString.delete(0,idxLastE+1);
                                 Log.d("Data left",String.valueOf(recDataString)); // check if any chars left in the string buffer
                             }
-                            setData(values);
+                            List <Entry> dataToUpdate;
+                            if (values.size() > 2500)
+                            {
+                                int idxEnd = values.size();
+                                int idxStart = idxEnd - 2501;
+                                dataToUpdate = values.subList(idxStart,idxEnd);
+                            }
+                            else
+                            {
+                                dataToUpdate = values;
+                            }
+                            setData(dataToUpdate);
+//                            values.removeAll(values);
                         }
                         break;
                 }
@@ -325,7 +352,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         };
     }
 
-    private void setData(ArrayList  <Entry> value) {
+    private void setData(List  <Entry> value) {
 
 /*        for (int i = 0; i < count; i++) {
 
@@ -339,8 +366,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         if (chartdata != null)// && chartdata.getDataSetCount() > 0)
         {
             set1 = (LineDataSet) chartdata.getDataSetByIndex(0);
-//            chartdata.addEntry(new Entry(x,y),0);
             set1.setEntries(value);
+            Log.d("Dataset size",String.valueOf(set1.getEntryCount()));
+            //chartdata.addDataSet(dataSet);
             /*XAxis xl = chart.getXAxis();
             xl.setDrawGridLines(true);
             xl.setGranularityEnabled(true);
@@ -348,9 +376,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
  //           XAxis xAxis = chart.getXAxis();
  //           xAxis.resetAxisMaximum();
 //            xAxis.setValueFormatter(new IndexAxisValueFormatter(timeStamp));
-            chartdata.notifyDataChanged();
-            set1.notifyDataSetChanged();
-            //chart.notifyDataSetChanged();
+//            chartdata.notifyDataChanged();
+//            set1.notifyDataSetChanged();
+ //           chart.notifyDataSetChanged();
             chart.setVisibleXRangeMaximum(2500);
             chart.moveViewToX(chartdata.getEntryCount());
             //chart.invalidate();
@@ -556,7 +584,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             try {
                 inputStream = mBTSocket.getInputStream();
                 while (!bStop) {
-                    byte[] buffer = new byte[4096];
+                    byte[] buffer = new byte[1024];
                     int bytes;
                     if (inputStream.available() > 0) {
                         bytes = inputStream.read(buffer);
@@ -567,7 +595,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                         //for (i = 0; i < buffer.length && buffer[i] != 0; i++) {
                         //}
                         final String strInput = new String(buffer, 0, bytes);
-                        Log.d("Raw",strInput);
+//                        Log.d("Raw",strInput);
                          //SxxxxE contains 6 characters, idexes from 0 - 5
                         /*handler.post(new Runnable() {
                             public void run() {
@@ -824,5 +852,4 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             progressDialog.dismiss();
         }
     }
-
 }

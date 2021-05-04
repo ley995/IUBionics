@@ -70,6 +70,18 @@
         android:textAppearance="?android:attr/textAppearanceMedium"
         />
 
+    <Button
+        android:id="@+id/btn_zoomout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/chart1"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:gravity="center|top"
+        android:text="zoom out" />
+
     <!--<TextView
         android:id="@+id/tvXMax"
         android:layout_width="50dp"
