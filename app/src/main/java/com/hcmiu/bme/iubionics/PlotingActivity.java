@@ -169,7 +169,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             yAxis.enableGridDashedLine(10f, 10f, 0f);
 
             // axis range
-            yAxis.setAxisMaximum(9900f);
+            yAxis.setAxisMaximum(999999f);
             yAxis.setAxisMinimum(0f);
         }
         // add data
@@ -194,14 +194,33 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                 {
                     case STATE_MESSAGE_RECEIVED:
                         String readMessage = (String) msg.obj;
-                        if (readMessage.contains("S") && readMessage.contains("E")) {
-                            recDataString.append(readMessage);
+                        recDataString.append(readMessage);
+                        Log.d("Data",String.valueOf(recDataString));
+                        int endOfLineIndex = recDataString.indexOf("E");
+                        Log.d("endOf",String.valueOf(endOfLineIndex));
+                        if (endOfLineIndex >= 0) { // Found the ending character E
                             int strLength = recDataString.length();
-                            int dataNumber = strLength / 6;
-                            ArrayList<String> data = new ArrayList<String>();
-                            Float value;
+                            int idxFirstS = recDataString.indexOf("S"); // Find the first index of "S"
+                            int idxLastE = recDataString.lastIndexOf("E");
+                            int numberDataPoint = (idxLastE - idxFirstS + 1)/8;
+                            int value;
                             int i = 0;
-                            switch (dataNumber) {
+                            for (i = 0; i < numberDataPoint; i++)
+                            {
+                                int idxSplitStart = (i*8) + idxFirstS + 1;
+                                int idxSplitEnd = idxSplitStart + 6;
+                                String data = recDataString.substring(idxSplitStart,idxSplitEnd);
+                                if (!(data.contains("S")||data.contains("E")))
+                                {
+                                    value = Integer.parseInt(data);
+                                    Log.d("Data", String.valueOf(value));
+/*                                    tvY.setText(String.valueOf(value));
+                                    tvX.setText(String.valueOf(timestamp));*/
+                                    values.add(new Entry(timestamp, value));
+                                    timestamp++;
+                                }
+                            }
+                            /*switch (dataNumber) {
                                 case 1:
                                     Log.d("Case","1");
                                     data.add(recDataString.substring(1, 5));
@@ -287,8 +306,17 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                                         timestamp++;
                                     }
                                     break;
+                            }*/
+                            if (idxFirstS == 0)
+                            {
+                                recDataString.delete(idxFirstS,idxLastE+1);
+                                Log.d("Data left",String.valueOf(recDataString)); // check if any chars left in the string buffer
                             }
-                            recDataString.delete(0,recDataString.length());
+                            else
+                            {
+                                recDataString.delete(0,idxLastE+1);
+                                Log.d("Data left",String.valueOf(recDataString)); // check if any chars left in the string buffer
+                            }
                             setData(values);
                         }
                         break;
@@ -308,7 +336,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         //values.add(new Entry(x, y));
         LineDataSet set1;
         LineData chartdata = chart.getData();
-        if (chartdata != null && chartdata.getDataSetCount() > 0)
+        if (chartdata != null)// && chartdata.getDataSetCount() > 0)
         {
             set1 = (LineDataSet) chartdata.getDataSetByIndex(0);
 //            chartdata.addEntry(new Entry(x,y),0);
@@ -317,7 +345,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             xl.setDrawGridLines(true);
             xl.setGranularityEnabled(true);
             xl.setGranularity(2f);*/
-            XAxis xAxis = chart.getXAxis();
+ //           XAxis xAxis = chart.getXAxis();
  //           xAxis.resetAxisMaximum();
 //            xAxis.setValueFormatter(new IndexAxisValueFormatter(timeStamp));
             chartdata.notifyDataChanged();
@@ -325,7 +353,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             //chart.notifyDataSetChanged();
             chart.setVisibleXRangeMaximum(2500);
             chart.moveViewToX(chartdata.getEntryCount());
-            chart.invalidate();
+            //chart.invalidate();
             //Log.d("Setdata","Finish");
         }
         else {
@@ -528,7 +556,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             try {
                 inputStream = mBTSocket.getInputStream();
                 while (!bStop) {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[4096];
                     int bytes;
                     if (inputStream.available() > 0) {
                         bytes = inputStream.read(buffer);
@@ -539,6 +567,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                         //for (i = 0; i < buffer.length && buffer[i] != 0; i++) {
                         //}
                         final String strInput = new String(buffer, 0, bytes);
+                        Log.d("Raw",strInput);
                          //SxxxxE contains 6 characters, idexes from 0 - 5
                         /*handler.post(new Runnable() {
                             public void run() {
