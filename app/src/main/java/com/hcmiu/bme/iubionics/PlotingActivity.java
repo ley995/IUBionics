@@ -692,8 +692,6 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                          * If checked then receive text, better design would probably be to stop thread if unchecked and free resources, but this is a quick fix
                          */
                         handler.obtainMessage(STATE_MESSAGE_RECEIVED,bytes,-1,strInput).sendToTarget();
-
-
                     }
                     //Thread.sleep(1);
                 }
