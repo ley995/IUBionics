@@ -1,10 +1,12 @@
 package com.hcmiu.bme.iubionics;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -22,6 +24,7 @@ import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -61,10 +64,17 @@ import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.Utils;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -79,30 +89,34 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
     static final int STATE_CONNECTED = 3;
     static final int STATE_CONNECTION_FAILED = 4;
     static final int STATE_MESSAGE_RECEIVED = 5;
-    private LineChart chart;
+//    private LineChart chart;
    // private SeekBar seekBarX, seekBarY;
-    private TextView tvX, tvY;
+//    private TextView tvX, tvY;
     private BluetoothSocket mBTSocket;
     private int mMaxChars = 50000;
     private BluetoothDevice mDevice;
     private PlotingActivity.ReadInput mReadThread = null;
     private UUID mDeviceUUID;
     private Button mBtnDisconnect;
-    private Button  btnZoomOut;
+    private Button  btnZoomOut, btnExport;
     private boolean mIsUserInitiatedDisconnect = false;
     private boolean mIsBluetoothConnected = false;
     private static final String TAG = "Plotting";
     private ProgressDialog progressDialog;
     public Handler handler;
     public StringBuilder recDataString = new StringBuilder();
+    private LineChart[] charts = new LineChart[5];
+    private String[] channelLabel = {"Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5"};
 
     public int count = 0;
-    private float starttime = 0;
-    private float timestamp = 0;
-
-    private ArrayList<Integer> dataValues = new ArrayList<>();
-    private ArrayList<Double> timeStamp = new ArrayList<>();
-    private ArrayList<Entry> values = new ArrayList<>();
+    private float timestamp = 1;
+    final int numberOfCharsInPack = 36;
+    private ArrayList<Entry> values_c1 = new ArrayList<>();
+    private ArrayList<Entry> values_c2 = new ArrayList<>();
+    private ArrayList<Entry> values_c3 = new ArrayList<>();
+    private ArrayList<Entry> values_c4 = new ArrayList<>();
+    private ArrayList<Entry> values_c5 = new ArrayList<>();
+    private List[] values = {values_c1, values_c2, values_c3, values_c4, values_c5};
 
 
     @SuppressLint("LongLogTag")
@@ -119,21 +133,28 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         mMaxChars = b.getInt(MainActivity.BUFFER_SIZE);
         Log.d(TAG, "Ready");
         setTitle("Plotting");
-        tvX = findViewById(R.id.tvXMax);
-        tvY = findViewById(R.id.tvYMax);
+//        tvX = findViewById(R.id.tvXMax);
+//        tvY = findViewById(R.id.tvYMax);
         btnZoomOut = findViewById(R.id.btn_zoomout);
+        btnExport = findViewById(R.id.btn_export);
 
-        {   // // Chart Style // //
-            chart = findViewById(R.id.chart1);
+        charts[0] = findViewById(R.id.chart1);
+        charts[1] = findViewById(R.id.chart2);
+        charts[2] = findViewById(R.id.chart3);
+        charts[3] = findViewById(R.id.chart4);
+        charts[4] = findViewById(R.id.chart5);
+
+        for (int i = 0; i < 5; i++) {   // // Chart Style // //
+//            charts[0] = findViewById(R.id.chart1);
             // background color
-           chart.setBackgroundColor(Color.WHITE);
+            charts[i].setBackgroundColor(Color.WHITE);
             // disable description text
-            chart.getDescription().setEnabled(false);
+            charts[i].getDescription().setEnabled(false);
             // enable touch gestures
-            chart.setTouchEnabled(true);
+            charts[i].setTouchEnabled(true);
             // set listeners
-            chart.setOnChartValueSelectedListener(this);
-            chart.setDrawGridBackground(false);
+            charts[i].setOnChartValueSelectedListener(this);
+            charts[i].setDrawGridBackground(false);
 
 //            // create marker to display box when values are selected
 //            MyMarkerView mv = new MyMarkerView(this, R.layout.custom_marker_view);
@@ -143,62 +164,131 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
 //            chart.setMarker(mv);
 
             // enable scaling and dragging
-            chart.setDragEnabled(true);
-            chart.setScaleEnabled(true);
+            charts[i].setDragEnabled(true);
+            charts[i].setScaleEnabled(true);
             // chart.setScaleXEnabled(true);
             // chart.setScaleYEnabled(true);
 
             // force pinch zoom along both axis
-            chart.setPinchZoom(true);
-            chart.setVisibleXRangeMaximum(10);
+            charts[i].setPinchZoom(true);
+            charts[i].setVisibleXRangeMaximum(10);
+
+            XAxis xAxis;
+            {   // // X-Axis Style // //
+                xAxis = charts[i].getXAxis();
+                xAxis.setDrawGridLines(false);
+                xAxis.setAvoidFirstLastClipping(true);
+                xAxis.setEnabled(false);
+                xAxis.setDrawLabels(false);
+                // vertical grid lines
+//              xAxis.enableGridDashedLine(10f, 10f, 0f);
+//              xAxis.setAxisMaximum(0);
+//              xAxis.setPosition(XAxis.XAxisPosition.TOP);
+
+            }
+
+            YAxis yAxis;
+            {   // // Y-Axis Style // //
+                yAxis = charts[i].getAxisLeft();
+                // disable dual axis (only use LEFT axis)
+                charts[i].getAxisRight().setEnabled(false);
+                yAxis.setDrawGridLines(false);
+                // horizontal grid lines
+//                yAxis.enableGridDashedLine(10f, 10f, 0f);
+                // axis range
+//                yAxis.setAxisMaximum(999999f);
+                yAxis.setAxisMinimum(0f);
+                yAxis.setDrawLabels(false);
+                yAxis.setEnabled(false);
+            }
+            // add data
+            //setData(0, 0);
+
+            values[i].add(new Entry(0,0));
+            setData(charts[i],values[i], i);
+            // draw points over time
+            //chart.animateX(1500);
+
+            // get the legend (only possible after setting data)
+            Legend l = charts[i].getLegend();
+            // draw legend entries as lines
+            l.setForm(LegendForm.LINE);
+            l.setTextColor(Color.RED);
+            l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+            l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
+            l.setOrientation(Legend.LegendOrientation.VERTICAL);
+            l.setDrawInside(true);
+            l.setEnabled(false);
         }
-        XAxis xAxis;
-        {   // // X-Axis Style // //
-            xAxis = chart.getXAxis();
-
-            // vertical grid lines
-            xAxis.enableGridDashedLine(10f, 10f, 0f);
-//            xAxis.setAxisMaximum(0);
-            xAxis.setPosition(XAxis.XAxisPosition.TOP);
-//            xAxis.setL
-        }
-
-        YAxis yAxis;
-        {   // // Y-Axis Style // //
-            yAxis = chart.getAxisLeft();
-
-            // disable dual axis (only use LEFT axis)
-            chart.getAxisRight().setEnabled(false);
-
-            // horizontal grid lines
-            yAxis.enableGridDashedLine(10f, 10f, 0f);
-
-            // axis range
-            yAxis.setAxisMaximum(999999f);
-            yAxis.setAxisMinimum(0f);
-        }
-        // add data
-        //setData(0, 0);
-        values.add(new Entry(0,0));
-        setData(values);
-        // draw points over time
-        //chart.animateX(1500);
-
-        // get the legend (only possible after setting data)
-        Legend l = chart.getLegend();
-
-        // draw legend entries as lines
-        l.setForm(LegendForm.LINE);
 
         btnZoomOut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 List <Entry> allList;
-                allList = values;
-                setData(allList);
+                for (int i = 0; i < 5; i++) {
+                    allList = values[i];
+                    setData(charts[i], allList, i);
+                }
             }
         });
 
+        btnExport.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    ArrayList<String> dataToBeStored = new ArrayList<>();
+                    dataToBeStored.add("Counts\tChannel 1\tChannel 2\tChannel 3\tChannel 4\tChannel 5");
+                    int numberOfDatapoints = values_c1.size();
+                    for ( int k = 0; k < numberOfDatapoints; k++)
+                    {
+/*                        Log.d("Value",entryPoint.toString());
+                        Log.d("X",String.valueOf(entryPoint.getX()));
+                        Log.d("Y",String.valueOf(entryPoint.getY()));*/
+                        String storedString = (String.valueOf(values_c1.get(k).getX()) + "\t" + String.valueOf(values_c1.get(k).getY())
+                                + "\t" + String.valueOf(values_c2.get(k).getY()) + "\t" + String.valueOf(values_c3.get(k).getY()) + "\t" + String.valueOf(values_c4.get(k).getY())
+                                + "\t" + String.valueOf(values_c5.get(k).getY()));
+//                        Log.d("Data to be stored", storedString);
+                        dataToBeStored.add(storedString);
+                    }
+
+//                    final File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Bluetooth Plotting 2/");
+                    int code = getApplicationContext().getPackageManager().checkPermission(
+                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                            getApplicationContext().getPackageName());
+                    if (code == PackageManager.PERMISSION_GRANTED) {
+                        final File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Serial plotter");
+                        if (!dir.exists()) {
+                            if (!dir.mkdirs()) {
+//                                Log.e("TAG", "could not create the directories");
+                                Toast.makeText(getBaseContext(), "Storage directory CANNOT be created. Please allow storage permission in Settings/ Apps", Toast.LENGTH_LONG).show();
+                            }
+                        }
+
+                        String storageDirectory = dir.toString();
+//                        Log.d("Directory", storageDirectory);
+                        final File myFile = new File(dir, "Output" + ".txt");
+                        if (!myFile.exists()) {
+                            myFile.createNewFile();
+                        }
+
+                        FileWriter writer = new FileWriter(myFile);
+                        for (String str : dataToBeStored) {
+                            writer.write(str + "\n");
+                        }
+                        writer.close();
+                        Toast.makeText(getBaseContext(), "Data has been exported to: Internal storage/ Serial plotter/ Output.txt", Toast.LENGTH_LONG).show();
+//                        Log.d("File Directory", myFile.getAbsolutePath());
+                    }
+                    else
+                    {
+//                        Log.d("Permission","NOT GRANTED");
+                        Toast.makeText(getBaseContext(), "Storage directory CANNOT be created. Please allow storage permission in Settings/ Apps", Toast.LENGTH_LONG).show();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         handler = new Handler(Looper.getMainLooper())
         {
@@ -210,141 +300,60 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                     case STATE_MESSAGE_RECEIVED:
                         String readMessage = (String) msg.obj;
                         recDataString.append(readMessage);
-                        Log.d("Data",String.valueOf(recDataString));
+//                        Log.d("recDataString",String.valueOf(recDataString));
                         int endOfLineIndex = recDataString.indexOf("E");
-                        Log.d("endOf",String.valueOf(endOfLineIndex));
+//                        Log.d("endOf",String.valueOf(endOfLineIndex));
                         if (endOfLineIndex >= 0) { // Found the ending character E
                             int strLength = recDataString.length();
                             int idxFirstS = recDataString.indexOf("S"); // Find the first index of "S"
-                            int idxLastE = recDataString.lastIndexOf("E");
-                            int numberDataPoint = (idxLastE - idxFirstS + 1)/8;
+                            int idxLastE = recDataString.lastIndexOf("E"); // Find the last index of E
+                            int numberDataPoint = (idxLastE - idxFirstS + 1)/numberOfCharsInPack;
                             int value;
-                            int i = 0;
-                            for (i = 0; i < numberDataPoint; i++)
+                            for (int i = 0; i < numberDataPoint; i++)
                             {
-                                int idxSplitStart = (i*8) + idxFirstS + 1;
-                                int idxSplitEnd = idxSplitStart + 6;
+                                int idxSplitStart = (i*numberOfCharsInPack) + idxFirstS + 1;
+                                int idxSplitEnd = idxSplitStart + (numberOfCharsInPack - 2);
                                 String data = recDataString.substring(idxSplitStart,idxSplitEnd);
+//                                Log.d("Data substring",String.valueOf(recDataString));
                                 if (!(data.contains("S")||data.contains("E")))
                                 {
-                                    value = Integer.parseInt(data);
-                                    Log.d("Data", String.valueOf(value));
-/*                                    tvY.setText(String.valueOf(value));
-                                    tvX.setText(String.valueOf(timestamp));*/
-                                    values.add(new Entry(timestamp, value));
-                                    timestamp++;
+                                    try {
+                                        String [] tokens = data.split(",");
+                                        for (int j = 0; j < 5; j++) {
+//                                            Log.d("Tokens", tokens[j]);
+                                            value = Integer.parseInt(tokens[j]);
+//                                            Log.d("Data", String.valueOf(value));
+                                            values[j].add(new Entry(timestamp, value));
+//                                            Log.d("Convert",values[j].toString());
+                                        }
+                                        timestamp++;
+                                    } catch (Exception e) {
+                                        Toast.makeText(getBaseContext(),"Invalid data format",Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             }
-                            /*switch (dataNumber) {
-                                case 1:
-                                    Log.d("Case","1");
-                                    data.add(recDataString.substring(1, 5));
-                                    value = Float.parseFloat(data.get(0));
-                                    Log.d("Data", String.valueOf(value));
-                                    tvY.setText(String.valueOf(value));
-                                    tvX.setText(String.valueOf(timestamp));
-                                    values.add(new Entry(timestamp, value));
-                                    timestamp++;
-                                    break;
-                                case 2:
-                                    Log.d("Case","2");
-                                    data.add(recDataString.substring(1, 5));
-                                    data.add(recDataString.substring(7, 11));
-                                    for (i = 0; i < dataNumber; i++) {
-                                        value = Float.parseFloat(data.get(i));
-                                        Log.d("Data", String.valueOf(value));
-                                        tvY.setText(String.valueOf(value));
-                                        tvX.setText(String.valueOf(timestamp));
-                                        values.add(new Entry(timestamp, value));
-                                        timestamp++;
-                                    }
-                                    break;
-                                case 3:
-                                    Log.d("Case","3");
-                                    data.add(recDataString.substring(1, 5));
-                                    data.add(recDataString.substring(7, 11));
-                                    data.add(recDataString.substring(13, 17));
-                                    for (i = 0; i < dataNumber; i++) {
-                                        value = Float.parseFloat(data.get(i));
-                                        Log.d("Data", String.valueOf(value));
-                                        tvY.setText(String.valueOf(value));
-                                        tvX.setText(String.valueOf(timestamp));
-                                        values.add(new Entry(timestamp, value));
-                                        timestamp++;
-                                    }
-                                    break;
-                                case 4:
-                                    Log.d("Case","4");
-                                    data.add(recDataString.substring(1, 5));
-                                    data.add(recDataString.substring(7, 11));
-                                    data.add(recDataString.substring(13, 17));
-                                    data.add(recDataString.substring(19, 23));
-                                    for (i = 0; i < dataNumber; i++) {
-                                        value = Float.parseFloat(data.get(i));
-                                        Log.d("Data", String.valueOf(value));
-                                        tvY.setText(String.valueOf(value));
-                                        tvX.setText(String.valueOf(timestamp));
-                                        values.add(new Entry(timestamp, value));
-                                        timestamp++;
-                                    }
-                                    break;
-                                case 5:
-                                    Log.d("Case","5");
-                                    data.add(recDataString.substring(1, 5));
-                                    data.add(recDataString.substring(7, 11));
-                                    data.add(recDataString.substring(13, 17));
-                                    data.add(recDataString.substring(19, 23));
-                                    data.add(recDataString.substring(25, 29));
-                                    for (i = 0; i < dataNumber; i++) {
-                                        value = Float.parseFloat(data.get(i));
-                                        Log.d("Data", String.valueOf(value));
-                                        tvY.setText(String.valueOf(value));
-                                        tvX.setText(String.valueOf(timestamp));
-                                        values.add(new Entry(timestamp, value));
-                                        timestamp++;
-                                    }
-                                    break;
-                                case 6:
-                                    Log.d("Case","6");
-                                    data.add(recDataString.substring(1, 5));
-                                    data.add(recDataString.substring(7, 11));
-                                    data.add(recDataString.substring(13, 17));
-                                    data.add(recDataString.substring(19, 23));
-                                    data.add(recDataString.substring(25, 29));
-                                    data.add(recDataString.substring(31, 35));
-                                    for (i = 0; i < dataNumber; i++) {
-                                        value = Float.parseFloat(data.get(i));
-                                        Log.d("Data", String.valueOf(value));
-                                        tvY.setText(String.valueOf(value));
-                                        tvX.setText(String.valueOf(timestamp));
-                                        values.add(new Entry(timestamp, value));
-                                        timestamp++;
-                                    }
-                                    break;
-                            }*/
                             if (idxFirstS == 0)
                             {
                                 recDataString.delete(idxFirstS,idxLastE+1);
-                                Log.d("Data left",String.valueOf(recDataString)); // check if any chars left in the string buffer
+//                                Log.d("Data left",String.valueOf(recDataString)); // check if any chars left in the string buffer
                             }
                             else
                             {
                                 recDataString.delete(0,idxLastE+1);
-                                Log.d("Data left",String.valueOf(recDataString)); // check if any chars left in the string buffer
+//                                Log.d("Data left",String.valueOf(recDataString)); // check if any chars left in the string buffer
                             }
-                            List <Entry> dataToUpdate;
-                            if (values.size() > 2500)
-                            {
-                                int idxEnd = values.size();
-                                int idxStart = idxEnd - 2501;
-                                dataToUpdate = values.subList(idxStart,idxEnd);
-                            }
-                            else
-                            {
-                                dataToUpdate = values;
-                            }
-                            setData(dataToUpdate);
+                            for (int channel = 0; channel < 5; channel++) {
+                                List<Entry> dataToUpdate;
+                                if (values[channel].size() > 1000) {
+                                    int idxEnd = values[channel].size();
+                                    int idxStart = idxEnd - 1000;
+                                    dataToUpdate = values[channel].subList(idxStart, idxEnd);
+                                } else {
+                                    dataToUpdate = values[channel];
+                                }
+                                setData(charts[channel], dataToUpdate, channel);
 //                            values.removeAll(values);
+                            }
                         }
                         break;
                 }
@@ -352,13 +361,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         };
     }
 
-    private void setData(List  <Entry> value) {
-
-/*        for (int i = 0; i < count; i++) {
-
-            float val = (float) (Math.random() * range) - 30;
-            values.add(new Entry(i, val, getResources().getDrawable(R.drawable.star)));
-        }*/
+    private void setData(LineChart chart, List  <Entry> value, int channel) {
         //Log.d("Set data","start");
         //values.add(new Entry(x, y));
         LineDataSet set1;
@@ -367,7 +370,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         {
             set1 = (LineDataSet) chartdata.getDataSetByIndex(0);
             set1.setEntries(value);
-            Log.d("Dataset size",String.valueOf(set1.getEntryCount()));
+//            Log.d("Dataset size",String.valueOf(set1.getEntryCount()));
             //chartdata.addDataSet(dataSet);
             /*XAxis xl = chart.getXAxis();
             xl.setDrawGridLines(true);
@@ -376,9 +379,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
  //           XAxis xAxis = chart.getXAxis();
  //           xAxis.resetAxisMaximum();
 //            xAxis.setValueFormatter(new IndexAxisValueFormatter(timeStamp));
-//            chartdata.notifyDataChanged();
-//            set1.notifyDataSetChanged();
- //           chart.notifyDataSetChanged();
+            set1.notifyDataSetChanged();
+            chartdata.notifyDataChanged();
+            chart.notifyDataSetChanged();
             chart.setVisibleXRangeMaximum(2500);
             chart.moveViewToX(chartdata.getEntryCount());
             //chart.invalidate();
@@ -387,7 +390,8 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
         else {
             // create a dataset and give it a type
             //set1 = new LineDataSet(values, "DataSet 1");
-            set1 = new LineDataSet(value,"Channel 1");
+//            set1 = new LineDataSet(value,"Channel 1");
+            set1 = new LineDataSet(value, channelLabel[channel]);
             set1.setDrawIcons(false);
 
             // draw dashed line
@@ -419,13 +423,12 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             set1.setHighlightLineWidth(3f);
             // set the filled area
             set1.setDrawFilled(false);
-            set1.setFillFormatter(new IFillFormatter() {
+/*            set1.setFillFormatter(new IFillFormatter() {
                 @Override
                 public float getFillLinePosition(ILineDataSet dataSet, LineDataProvider dataProvider) {
                     return chart.getAxisLeft().getAxisMinimum();
                     }
-                });
-            }
+                });*/
             // set color of filled area
 
             set1.setFillColor(Color.BLACK);
@@ -441,6 +444,9 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             legend.setTextSize(12f);
             //Log.d("update chart","finish");
         }
+    }
+
+
 
     protected float getRandom(float range, float start) {
         return (float) (Math.random() * range) + start;
@@ -504,7 +510,7 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
                     .show();
     }
     protected void saveToGallery() {
-        saveToGallery(chart, "Ploting");
+        saveToGallery(charts[0], "Ploting");
     }
     private void sendCmd(String s){
         try {
@@ -852,4 +858,5 @@ public class PlotingActivity extends AppCompatActivity implements OnSeekBarChang
             progressDialog.dismiss();
         }
     }
+
 }

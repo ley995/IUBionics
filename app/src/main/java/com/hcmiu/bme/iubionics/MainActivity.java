@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(enableBT, BT_ENABLE_REQUEST);
                 } else {
                     new SearchDevices().execute();
+                    //connect.setEnabled(true);
                 }
             }
         });

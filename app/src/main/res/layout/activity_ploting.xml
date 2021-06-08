@@ -6,18 +6,116 @@
     android:layout_height="match_parent"
     tools:context=".PlotingActivity">
 
+    <TextView
+        android:id="@+id/thumb_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:gravity="start"
+        android:text="Thumb"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chart1"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/tvXMax"
-        android:layout_below="@+id/xLabel"
-        android:layout_marginStart="-20dp"
-        android:layout_marginTop="5dp"
-        android:layout_toEndOf="@+id/yLabel" />
-
+        android:layout_height="90dp"
+        android:layout_below="@+id/thumb_label"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop = "5dp"
+        android:layout_marginEnd="20dp"
+        />
 
     <TextView
+        android:id="@+id/index_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:layout_marginStart="20dp"
+        android:layout_below="@+id/thumb_label"
+        android:gravity="start"
+        android:text="Index"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        />
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart2"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:layout_below="@+id/index_label"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop = "5dp"
+        android:layout_marginEnd="20dp"
+        />
+
+    <TextView
+        android:id="@+id/middle_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:layout_marginStart="20dp"
+        android:layout_below="@+id/index_label"
+        android:gravity="start"
+        android:text="Middle"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        />
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart3"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:layout_below="@+id/middle_label"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="20dp"
+        />
+
+    <TextView
+        android:id="@+id/ring_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="100dp"
+        android:layout_marginStart="20dp"
+        android:layout_below="@+id/middle_label"
+        android:gravity="start"
+        android:text="Ring"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        />
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart4"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:layout_below="@+id/ring_label"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="20dp"
+        />
+
+    <TextView
+        android:id="@+id/little_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="100dp"
+        android:layout_below="@+id/ring_label"
+        android:gravity="start"
+        android:text="Little"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        />
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart5"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:layout_below="@+id/little_label"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="20dp"
+        />
+
+    <!--<TextView
         android:id="@+id/tvXMax"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
@@ -44,74 +142,31 @@
         android:gravity="right"
         android:text="@string/dash"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        />
+        /> -->
 
-    <TextView
-        android:id="@+id/xLabel"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:text="Time (s)"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"
-        android:gravity="center"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        />
-
-    <TextView
-        android:id="@+id/yLabel"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_centerVertical="true"
-        android:rotation="-90"
-        android:text="R (ohm)"
-        android:gravity="center_vertical"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        />
 
     <Button
         android:id="@+id/btn_zoomout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/chart1"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
-        android:gravity="center|top"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="15dp"
+        android:gravity="center"
         android:text="zoom out" />
 
-    <!--<TextView
-        android:id="@+id/tvXMax"
-        android:layout_width="50dp"
+    <Button
+        android:id="@+id/btn_export"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/chart1"
-        android:layout_alignParentTop="false"
-        android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginBottom="18dp"
-        android:gravity="right"
-        android:text="@string/dash"
-        android:textAppearance="?android:attr/textAppearanceMedium" />-->
-
-    <!--<TextView
-        android:id="@+id/tvYMax"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="52dp"
-        android:layout_marginEnd="19dp"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="10dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="50dp"
+        android:layout_marginEnd="20dp"
         android:layout_marginBottom="15dp"
-        android:gravity="right"
-        android:text="@string/dash"
-        android:textAppearance="?android:attr/textAppearanceMedium" />-->
-
+        android:layout_toEndOf="@+id/btn_zoomout"
+        android:gravity="center"
+        android:text="Export" />
 
 </RelativeLayout>
